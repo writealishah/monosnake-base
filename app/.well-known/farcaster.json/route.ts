@@ -19,6 +19,7 @@ function resolveOrigin(request: NextRequest): string {
 export async function GET(request: NextRequest) {
   const origin = resolveOrigin(request);
   const canonicalDomain = origin.replace(/^https?:\/\//, "");
+  const isProduction = process.env.NODE_ENV === "production";
 
   const accountAssociationHeader = process.env.BASE_ACCOUNT_ASSOCIATION_HEADER ?? "";
   const accountAssociationPayload = process.env.BASE_ACCOUNT_ASSOCIATION_PAYLOAD ?? "";
@@ -32,19 +33,21 @@ export async function GET(request: NextRequest) {
     miniapp: {
       version: "1",
       name: baseAppConfig.appName,
-      subtitle: "Retro handheld Snake on Base",
+      subtitle: baseAppConfig.subtitle,
       description: baseAppConfig.appDescription,
-      iconUrl: `${origin}/favicon.svg`,
+      tagline: baseAppConfig.tagline,
+      iconUrl: `${origin}${baseAppConfig.iconPath}`,
       homeUrl: origin,
-      screenshotUrls: [
-        `${origin}/assets/screenshots/home-placeholder.svg`,
-        `${origin}/assets/screenshots/gameplay-placeholder.svg`,
-        `${origin}/assets/screenshots/leaderboard-placeholder.svg`,
-      ],
-      splashImageUrl: `${origin}/favicon.svg`,
+      screenshotUrls: baseAppConfig.screenshots.map((path) => `${origin}${path}`),
+      splashImageUrl: `${origin}${baseAppConfig.iconPath}`,
       splashBackgroundColor: "#8faa17",
-      primaryCategory: "games",
-      tags: ["retro", "snake", "base"],
+      primaryCategory: baseAppConfig.primaryCategory,
+      tags: baseAppConfig.tags,
+      heroImageUrl: `${origin}${baseAppConfig.heroImagePath}`,
+      ogTitle: baseAppConfig.ogTitle,
+      ogDescription: baseAppConfig.ogDescription,
+      ogImageUrl: `${origin}${baseAppConfig.ogImagePath}`,
+      noindex: !isProduction,
       canonicalDomain,
     },
   };
