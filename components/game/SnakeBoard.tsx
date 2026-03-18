@@ -7,7 +7,7 @@ type SnakeBoardProps = {
 };
 
 export function SnakeBoard({ gameState }: SnakeBoardProps) {
-  const cellSize = "clamp(10px, 1.25vw, 16px)";
+  const cellSize = "clamp(8px, 1.05vw, 15px)";
   const head = gameState.snake[0];
   const snakeBody = useMemo(() => new Set(gameState.snake.map(pointKey)), [gameState.snake]);
   const headKey = pointKey(head);
