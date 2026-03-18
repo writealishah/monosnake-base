@@ -13,8 +13,10 @@
     "test:contracts": "hardhat test"
   },
   "dependencies": {
+    "@farcaster/miniapp-sdk": "^0.2.3",
     "@tanstack/react-query": "^5.90.21",
     "next": "16.1.7",
+    "ox": "^0.14.5",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "viem": "^2.47.4",
