@@ -1,5 +1,6 @@
 export const baseAppConfig = {
   appName: "MonoSnake Base",
+  baseAppId: "69ba1e3d5b0dee671be77e7b",
   appDescription:
     "A retro monochrome Snake-style arcade game with wallet mode and onchain best-score recording.",
   iconPath: "/assets/icon-placeholder.svg",
@@ -8,9 +9,9 @@ export const baseAppConfig = {
     "/assets/screenshots/gameplay-placeholder.svg",
     "/assets/screenshots/leaderboard-placeholder.svg",
   ],
-  websiteUrl: "https://example.com",
+  websiteUrl: process.env.NEXT_PUBLIC_APP_URL ?? "https://monosnake.vercel.app",
   social: {
-    x: "https://x.com/your_handle",
+    x: "https://x.com/0xAlishah",
     farcaster: "https://warpcast.com/~/channel/your-channel",
   },
   builderCode: "TODO_ADD_BASE_BUILDER_CODE",
