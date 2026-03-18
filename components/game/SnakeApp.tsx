@@ -59,6 +59,7 @@ async function readJsonSafely<T>(response: Response): Promise<T | null> {
 }
 
 export function SnakeApp() {
+  const gameViewportRef = useRef<HTMLDivElement | null>(null);
   const [screenView, setScreenView] = useState<ScreenView>("home");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isSubmittingScore, setIsSubmittingScore] = useState(false);
@@ -247,6 +248,29 @@ export function SnakeApp() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [play, restartGame, screenView, setDirection, togglePause]);
+
+  useEffect(() => {
+    if (screenView !== "game") {
+      return;
+    }
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (!window.matchMedia("(max-width: 1023px)").matches) {
+      return;
+    }
+
+    const rafId = window.requestAnimationFrame(() => {
+      gameViewportRef.current?.scrollIntoView({
+        block: "start",
+        inline: "nearest",
+        behavior: "auto",
+      });
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    });
+
+    return () => window.cancelAnimationFrame(rafId);
+  }, [screenView]);
 
   useEffect(() => {
     if (!isConnected) {
@@ -579,6 +603,8 @@ export function SnakeApp() {
   }, [play, togglePause]);
 
   const showSubmitButton = isConnected && isGameOver && gameState.score > 0;
+  const isGameScreen = screenView === "game";
+  const isMobileCompactGame = isGameScreen;
   const canBeatOnchainBest = onchainBestScore === null || gameState.score > onchainBestScore;
   const submitDisabled = chainId === targetChainId && !canBeatOnchainBest;
   const showSwitchNetworkButton = isConnected && chainId !== targetChainId;
@@ -600,9 +626,16 @@ export function SnakeApp() {
     "rounded-sm border-2 border-[#27330e] bg-[#9cbc1e] px-3 py-2 text-[10px] text-[#1d250b] shadow-[2px_2px_0_#617a22] transition active:translate-y-[1px] active:shadow-[1px_1px_0_#617a22]";
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#f3f0e3_0%,#ddd9c4_58%,#cbc7ae_100%)] px-3 py-5 text-[#1f240c] sm:px-4 sm:py-6">
-      <div className="mx-auto grid w-full max-w-[1380px] gap-4 lg:grid-cols-[minmax(0,1.68fr)_minmax(238px,0.68fr)]">
-        <section className="rounded-[26px] border-[4px] border-[#b6b18f] bg-[#ece9d8] p-3 shadow-[0_14px_0_#8f8a68,0_22px_34px_rgba(68,60,30,0.2),inset_0_0_0_1px_#faf7e7] sm:p-4">
+    <main
+      className={`${isGameScreen ? "min-h-[100dvh] overscroll-y-none px-2 py-2 sm:px-3 sm:py-3" : "min-h-screen px-3 py-5 sm:px-4 sm:py-6"} bg-[radial-gradient(circle_at_top,#f3f0e3_0%,#ddd9c4_58%,#cbc7ae_100%)] text-[#1f240c]`}
+    >
+      <div
+        className={`mx-auto grid w-full max-w-[1380px] ${isMobileCompactGame ? "gap-2 sm:gap-3" : "gap-4"} lg:grid-cols-[minmax(0,1.68fr)_minmax(238px,0.68fr)]`}
+      >
+        <section
+          ref={gameViewportRef}
+          className={`rounded-[26px] border-[4px] border-[#b6b18f] bg-[#ece9d8] ${isMobileCompactGame ? "p-2 sm:p-3" : "p-3 sm:p-4"} shadow-[0_14px_0_#8f8a68,0_22px_34px_rgba(68,60,30,0.2),inset_0_0_0_1px_#faf7e7]`}
+        >
           <div className="mb-3 rounded-xl border-2 border-[#a6a17b] bg-[#dfdbc7] px-3 py-2 shadow-[inset_0_1px_0_#f7f4e8]">
             <div className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.18em] text-[#4f5f2b]">
               <p>MonoSnake Base</p>
@@ -728,7 +761,7 @@ export function SnakeApp() {
             ) : null}
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className={`flex flex-wrap gap-2 ${isMobileCompactGame ? "mt-2" : "mt-3"}`}>
             <button type="button" onClick={openHome} className={controlButtonClass}>
               HOME
             </button>
@@ -770,9 +803,11 @@ export function SnakeApp() {
             ) : null}
           </div>
 
-          <p className="mt-2 font-['VT323'] text-2xl leading-none text-[#2e3f12]">
-            Arrows/WASD move | Space or P pause | R restart
-          </p>
+          {!isMobileCompactGame ? (
+            <p className="mt-2 font-['VT323'] text-2xl leading-none text-[#2e3f12]">
+              Arrows/WASD move | Space or P pause | R restart
+            </p>
+          ) : null}
           {statusMessage ? (
             <p className="mt-2 rounded-sm border border-[#5b6a31] bg-[#d8d5c2] px-2 py-1.5 text-xs text-[#2c3713]">
               {statusMessage}
@@ -780,7 +815,7 @@ export function SnakeApp() {
           ) : null}
         </section>
 
-        <aside className="space-y-2.5 self-start lg:pt-1">
+        <aside className={`${isGameScreen ? "hidden lg:block" : "block"} space-y-2.5 self-start lg:pt-1`}>
           <WalletPanel
             isConnected={isConnected}
             address={address}
