@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+:root {
+  --shell: #ece9d8;
+  --shell-border: #b8b390;
+  --screen-bg: #90ad17;
+  --screen-dark: #223309;
+  --pixel-dark: #1f240c;
+  --pixel-mid: #39491a;
+  --pixel-light: #9cbc1e;
+}
+
+@theme inline {
+  --font-sans: var(--font-pixel-title);
+  --font-mono: var(--font-pixel-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: radial-gradient(circle at 20% -5%, #efecd9 0%, #d6d3bc 55%, #c7c2a7 100%);
+  color: var(--pixel-dark);
+  font-family: var(--font-pixel-title), monospace;
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+.lcd-tongue {
+  opacity: 0;
+  animation: lcdTongueFlick 1.8s steps(1, end) infinite;
+}
+
+.lcd-food-blink {
+  animation: lcdFoodBlink 1.25s steps(1, end) infinite;
+}
+
+@keyframes lcdTongueFlick {
+  0%,
+  82%,
+  100% {
+    opacity: 0;
+  }
+  86%,
+  90% {
+    opacity: 0.95;
+  }
+}
+
+@keyframes lcdFoodBlink {
+  0%,
+  66%,
+  100% {
+    filter: brightness(1) saturate(1);
+    box-shadow: inset 0 0 0 1px rgba(166, 208, 255, 0.24), 0 0 0 0 rgba(77, 150, 255, 0);
+  }
+  72% {
+    filter: brightness(1.22) saturate(1.16);
+    box-shadow: inset 0 0 0 1px rgba(185, 222, 255, 0.52), 0 0 7px 1px rgba(77, 150, 255, 0.32);
+  }
+  78% {
+    filter: brightness(1.1) saturate(1.1);
+    box-shadow: inset 0 0 0 1px rgba(173, 213, 255, 0.38), 0 0 4px 0 rgba(77, 150, 255, 0.2);
+  }
+  84% {
+    filter: brightness(1.18) saturate(1.14);
+    box-shadow: inset 0 0 0 1px rgba(182, 220, 255, 0.48), 0 0 6px 1px rgba(77, 150, 255, 0.28);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lcd-tongue,
+  .lcd-food-blink {
+    animation: none;
+  }
+}
