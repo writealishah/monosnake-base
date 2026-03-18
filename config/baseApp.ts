@@ -11,8 +11,8 @@ export const baseAppConfig = {
   ],
   websiteUrl: process.env.NEXT_PUBLIC_APP_URL ?? "https://monosnake.vercel.app",
   social: {
-    x: "https://x.com/0xAlishah",
-    farcaster: "https://warpcast.com/~/channel/your-channel",
+    x: "https://x.com/@0xAlishah",
+    farcaster: "https://warpcast.com/~/channel/0xAlishah",
   },
-  builderCode: "TODO_ADD_BASE_BUILDER_CODE",
+  builderCode: "bc_i0hk66fs",
 };
