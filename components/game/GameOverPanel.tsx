@@ -2,6 +2,7 @@ type GameOverPanelProps = {
   score: number;
   localBest: number;
   canSubmitScore: boolean;
+  submitDisabled?: boolean;
   isSubmitting: boolean;
   submitLabel: string;
   onReplay: () => void;
@@ -12,6 +13,7 @@ export function GameOverPanel({
   score,
   localBest,
   canSubmitScore,
+  submitDisabled = false,
   isSubmitting,
   submitLabel,
   onReplay,
@@ -41,7 +43,7 @@ export function GameOverPanel({
             <button
               type="button"
               onClick={onSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || submitDisabled}
               className="rounded-sm border-2 border-[#38431a] bg-[#d8d5c2] px-3 py-2 text-[11px] text-[#1f240c] shadow-[3px_3px_0_#505b2a] disabled:cursor-not-allowed disabled:opacity-60 active:translate-y-[1px] active:shadow-[2px_2px_0_#505b2a]"
             >
               {isSubmitting ? "SUBMITTING..." : submitLabel}
