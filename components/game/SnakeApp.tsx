@@ -33,6 +33,22 @@ type ScreenView = "home" | "game" | "leaderboard";
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
 const BASE_CHAIN_HEX = `0x${targetChain.id.toString(16)}`;
 
+type Eip1193Provider = {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+};
+
+async function readJsonSafely<T>(response: Response): Promise<T | null> {
+  const raw = await response.text();
+  if (!raw) {
+    return null;
+  }
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
 export function SnakeApp() {
   const [screenView, setScreenView] = useState<ScreenView>("home");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -129,10 +145,13 @@ export function SnakeApp() {
         setLeaderboardError(null);
         setLeaderboardNote(null);
         const response = await fetch(`/api/leaderboard?${params.toString()}`);
+        const payload = await readJsonSafely<LeaderboardResponse & { error?: string }>(response);
         if (!response.ok) {
-          throw new Error("Unable to fetch leaderboard data.");
+          throw new Error(payload?.error ?? "Unable to fetch leaderboard data.");
         }
-        const payload = (await response.json()) as LeaderboardResponse;
+        if (!payload) {
+          throw new Error("Leaderboard service returned an empty response.");
+        }
         setLeaderboardData(payload);
         setLeaderboardNote(payload.note ?? null);
 
@@ -167,7 +186,11 @@ export function SnakeApp() {
     async function loadProfile() {
       try {
         const response = await fetch(`/api/profile?address=${address}`);
-        const payload = (await response.json()) as { username: string | null };
+        const payload = await readJsonSafely<{ username: string | null }>(response);
+        if (!payload) {
+          setUsernameInput("");
+          return;
+        }
         setUsernameInput(payload.username ?? "");
       } catch {
         setUsernameInput("");
@@ -298,9 +321,9 @@ export function SnakeApp() {
           nonce,
         }),
       });
-      const payload = (await response.json()) as { error?: string };
+      const payload = await readJsonSafely<{ error?: string }>(response);
       if (!response.ok) {
-        throw new Error(payload.error ?? "Failed to save username.");
+        throw new Error(payload?.error ?? "Failed to save username.");
       }
       setStatusMessage("Username saved.");
       await loadLeaderboard();
@@ -312,6 +335,62 @@ export function SnakeApp() {
     }
   }, [address, isConnected, loadLeaderboard, play, signMessageAsync, usernameInput]);
 
+  const attemptSwitchToTargetNetwork = useCallback(async (): Promise<boolean> => {
+    try {
+      await switchChainAsync({ chainId: targetChainId });
+      setStatusMessage(`Switched to ${targetChainName}.`);
+      setShowNetworkModal(false);
+      return true;
+    } catch (error) {
+      try {
+        const provider = (window as Window & { ethereum?: Eip1193Provider }).ethereum;
+        if (!provider) {
+          throw error;
+        }
+
+        try {
+          await provider.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: BASE_CHAIN_HEX }],
+          });
+        } catch (switchError) {
+          const code = (switchError as { code?: number }).code;
+          if (code !== 4902) {
+            throw switchError;
+          }
+
+          await provider.request({
+            method: "wallet_addEthereumChain",
+            params: [
+              {
+                chainId: BASE_CHAIN_HEX,
+                chainName: targetChain.name,
+                nativeCurrency: targetChain.nativeCurrency,
+                rpcUrls: targetChain.rpcUrls.default.http,
+                blockExplorerUrls: targetChain.blockExplorers?.default?.url
+                  ? [targetChain.blockExplorers.default.url]
+                  : [],
+              },
+            ],
+          });
+          await provider.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: BASE_CHAIN_HEX }],
+          });
+        }
+
+        setStatusMessage(`Switched to ${targetChainName}.`);
+        setShowNetworkModal(false);
+        return true;
+      } catch (fallbackError) {
+        const message =
+          fallbackError instanceof Error ? fallbackError.message : "Network switch failed.";
+        setStatusMessage(message);
+        return false;
+      }
+    }
+  }, [switchChainAsync, targetChainId, targetChainName]);
+
   const submitScore = useCallback(async () => {
     play("buttonClick");
 
@@ -319,17 +398,15 @@ export function SnakeApp() {
       setStatusMessage("Connect wallet to submit your score.");
       return;
     }
+
     if (chainId !== targetChainId) {
-      try {
-        setStatusMessage(`Switching to ${targetChainName}...`);
-        await switchChainAsync({ chainId: targetChainId });
-        setStatusMessage(`Switched to ${targetChainName}. Tap submit again.`);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Network switch failed.";
-        setStatusMessage(message);
+      setStatusMessage(`Switching to ${targetChainName}...`);
+      const switched = await attemptSwitchToTargetNetwork();
+      if (!switched) {
+        return;
       }
-      return;
     }
+
     if (!targetContractAddress) {
       setStatusMessage(`${targetChainName} score contract is not configured yet.`);
       return;
@@ -346,20 +423,30 @@ export function SnakeApp() {
       const claimMessage = createScoreClaimMessage(address, gameState.score, nonce, sessionId);
       const signature = await signMessageAsync({ message: claimMessage });
 
-      const claimResponse = await fetch("/api/submit-score", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          address,
-          score: gameState.score,
-          nonce,
-          sessionId,
-          signature,
-        }),
-      });
-      const claimPayload = (await claimResponse.json()) as { error?: string };
-      if (!claimResponse.ok) {
-        throw new Error(claimPayload.error ?? "Signed score claim failed.");
+      try {
+        const claimResponse = await fetch("/api/submit-score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            address,
+            score: gameState.score,
+            nonce,
+            sessionId,
+            signature,
+          }),
+        });
+        const claimPayload = await readJsonSafely<{ error?: string }>(claimResponse);
+        if (!claimResponse.ok) {
+          if (claimResponse.status === 400 || claimResponse.status === 401) {
+            throw new Error(claimPayload?.error ?? "Signed score claim failed.");
+          }
+          setStatusMessage("Score claim service unavailable. Continuing onchain.");
+        }
+      } catch (claimError) {
+        if (claimError instanceof Error && /signature verification failed/i.test(claimError.message)) {
+          throw claimError;
+        }
+        setStatusMessage("Score claim service unavailable. Continuing onchain.");
       }
 
       const txHash = await writeContractAsync({
@@ -393,18 +480,18 @@ export function SnakeApp() {
     }
   }, [
     address,
+    attemptSwitchToTargetNetwork,
     chainId,
     gameState.score,
     isConnected,
     loadLeaderboard,
     play,
+    publicClient,
     refetchOnchainBest,
     signMessageAsync,
     targetChainId,
     targetChainName,
     targetContractAddress,
-    switchChainAsync,
-    publicClient,
     writeContractAsync,
   ]);
 
@@ -420,35 +507,8 @@ export function SnakeApp() {
 
   const switchToTargetNetwork = useCallback(async () => {
     play("buttonClick");
-    try {
-      await switchChainAsync({ chainId: targetChainId });
-      setStatusMessage(`Switched to ${targetChainName}.`);
-      setShowNetworkModal(false);
-    } catch (error) {
-      try {
-        const provider = (window as Window & {
-          ethereum?: {
-            request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-          };
-        }).ethereum;
-
-        if (!provider) {
-          throw error;
-        }
-
-        await provider.request({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: BASE_CHAIN_HEX }],
-        });
-        setStatusMessage(`Switched to ${targetChainName}.`);
-        setShowNetworkModal(false);
-      } catch (fallbackError) {
-        const message =
-          fallbackError instanceof Error ? fallbackError.message : "Network switch failed.";
-        setStatusMessage(message);
-      }
-    }
-  }, [play, switchChainAsync, targetChainId, targetChainName]);
+    await attemptSwitchToTargetNetwork();
+  }, [attemptSwitchToTargetNetwork, play]);
 
   const toggleSound = useCallback(() => {
     if (isMuted) {
