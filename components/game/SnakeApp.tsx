@@ -627,7 +627,7 @@ export function SnakeApp() {
 
   return (
     <main
-      className={`${isGameScreen ? "min-h-[100dvh] overscroll-y-none px-2 py-2 sm:px-3 sm:py-3" : "min-h-screen px-3 py-5 sm:px-4 sm:py-6"} bg-[radial-gradient(circle_at_top,#f3f0e3_0%,#ddd9c4_58%,#cbc7ae_100%)] text-[#1f240c]`}
+      className={`${isGameScreen ? "min-h-[100dvh] overscroll-y-none px-2 py-2 pb-[calc(env(safe-area-inset-bottom)+8px)] sm:px-3 sm:py-3" : "min-h-screen px-3 py-5 sm:px-4 sm:py-6"} bg-[radial-gradient(circle_at_top,#f3f0e3_0%,#ddd9c4_58%,#cbc7ae_100%)] text-[#1f240c]`}
     >
       <div
         className={`mx-auto grid w-full max-w-[1380px] ${isMobileCompactGame ? "gap-2 sm:gap-3" : "gap-4"} lg:grid-cols-[minmax(0,1.68fr)_minmax(238px,0.68fr)]`}
@@ -671,7 +671,7 @@ export function SnakeApp() {
 
             {screenView === "game" ? (
               <div className="relative">
-                <div className="relative overflow-hidden rounded-sm border border-[#607a17] bg-[#95b51a] px-2.5 py-2">
+                <div className="relative overflow-hidden rounded-sm border border-[#607a17] bg-[#95b51a] px-1.5 py-1.5 sm:px-2.5 sm:py-2">
                   <div
                     className="pointer-events-none absolute inset-0 opacity-[0.13] mix-blend-multiply"
                     style={{
@@ -701,10 +701,10 @@ export function SnakeApp() {
                     }}
                   />
 
-                  <div className="relative z-20 mb-1 flex items-start justify-between gap-3 px-0.5 text-[#203308]">
+                  <div className="relative z-20 mb-1 flex items-start justify-between gap-2 px-0.5 text-[#203308] sm:gap-3">
                     <div className="leading-none">
                       <p className="text-[9px] uppercase tracking-[0.15em] opacity-75">SCORE</p>
-                      <p className="font-['VT323'] text-3xl leading-none">{gameState.score}</p>
+                      <p className="font-['VT323'] text-[34px] leading-none sm:text-3xl">{gameState.score}</p>
                     </div>
 
                     <div className="pt-0.5 text-center text-[9px] uppercase tracking-[0.14em] opacity-80">
@@ -714,7 +714,7 @@ export function SnakeApp() {
 
                     <div className="text-right leading-none">
                       <p className="text-[9px] uppercase tracking-[0.15em] opacity-75">BEST</p>
-                      <p className="font-['VT323'] text-3xl leading-none">{localBest}</p>
+                      <p className="font-['VT323'] text-[34px] leading-none sm:text-3xl">{localBest}</p>
                       <div className="mt-0.5 flex justify-end">
                         <SoundToggle
                           isMuted={isMuted}
@@ -761,7 +761,9 @@ export function SnakeApp() {
             ) : null}
           </div>
 
-          <div className={`flex flex-wrap gap-2 ${isMobileCompactGame ? "mt-2" : "mt-3"}`}>
+          <div
+            className={`${isGameScreen ? "hidden md:flex" : "flex"} ${isMobileCompactGame ? "mt-2" : "mt-3"} flex-wrap gap-2`}
+          >
             <button type="button" onClick={openHome} className={controlButtonClass}>
               HOME
             </button>
