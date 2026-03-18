@@ -1,0 +1,28 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9cbc1e"/>
+      <stop offset="1" stop-color="#7f9f13"/>
+    </linearGradient>
+    <pattern id="grid" width="22" height="22" patternUnits="userSpaceOnUse">
+      <rect width="22" height="22" fill="none"/>
+      <path d="M22 0H0V22" stroke="#6f8b15" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)" opacity="0.34"/>
+
+  <rect x="84" y="60" width="1032" height="510" rx="24" fill="#8fb01a" stroke="#26400C" stroke-width="14"/>
+  <rect x="122" y="98" width="956" height="434" rx="12" fill="#96B91C" stroke="#28430D" stroke-width="8"/>
+
+  <text x="130" y="170" fill="#1C2A09" font-family="'Press Start 2P', monospace" font-size="44">MONOSNAKE BASE</text>
+  <text x="130" y="220" fill="#20310A" font-family="'VT323', monospace" font-size="44">Retro handheld snake on Base</text>
+
+  <rect x="170" y="260" width="860" height="220" fill="#92B318" stroke="#26400C" stroke-width="8"/>
+  <rect x="216" y="304" width="44" height="44" fill="#2D67C2"/>
+  <rect x="260" y="304" width="44" height="44" fill="#2A5EAB"/>
+  <rect x="304" y="304" width="44" height="44" fill="#245393"/>
+  <rect x="720" y="392" width="44" height="44" fill="#3992EE"/>
+
+  <text x="170" y="548" fill="#1D2E0A" font-family="'VT323', monospace" font-size="40">Play fast runs. Submit best score onchain.</text>
+</svg>
