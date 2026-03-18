@@ -27,11 +27,20 @@ import { createScoreClaimMessage, createUsernameMessage } from "@/lib/leaderboar
 import type { LeaderboardResponse } from "@/lib/leaderboard/types";
 import { SoundToggle } from "@/components/game/SoundToggle";
 import { useRetroSounds } from "@/lib/sound/useRetroSounds";
+import { baseAppConfig } from "@/config/baseApp";
+import { Attribution } from "ox/erc8021";
 
 type ScreenView = "home" | "game" | "leaderboard";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
 const BASE_CHAIN_HEX = `0x${targetChain.id.toString(16)}`;
+const configuredBuilderCode =
+  process.env.NEXT_PUBLIC_BASE_BUILDER_CODE?.trim() ?? baseAppConfig.builderCode.trim();
+const isBuilderCodeConfigured =
+  configuredBuilderCode.length > 3 && configuredBuilderCode !== "TODO_ADD_BASE_BUILDER_CODE";
+const scoreTxDataSuffix = isBuilderCodeConfigured
+  ? Attribution.toDataSuffix({ codes: [configuredBuilderCode] })
+  : undefined;
 
 type Eip1193Provider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
@@ -479,6 +488,7 @@ export function SnakeApp() {
         functionName: "submitScore",
         args: [BigInt(gameState.score)],
         chainId: targetChainId,
+        ...(scoreTxDataSuffix ? { dataSuffix: scoreTxDataSuffix } : {}),
       });
 
       setStatusMessage("Transaction sent. Waiting for confirmation...");
