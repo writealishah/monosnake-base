@@ -7,7 +7,7 @@ type SnakeBoardProps = {
 };
 
 export function SnakeBoard({ gameState }: SnakeBoardProps) {
-  const cellSize = "clamp(12px, 1.45vw, 17px)";
+  const cellSize = "clamp(10px, 1.25vw, 16px)";
   const head = gameState.snake[0];
   const snakeBody = useMemo(() => new Set(gameState.snake.map(pointKey)), [gameState.snake]);
   const headKey = pointKey(head);
@@ -151,7 +151,7 @@ export function SnakeBoard({ gameState }: SnakeBoardProps) {
   ]);
 
   return (
-    <div className="relative rounded-[3px] border-[7px] border-[#1e3006] bg-[#86a913] p-[3px] shadow-[inset_0_0_0_2px_#4b650d,0_6px_0_#3d530a]">
+    <div className="relative touch-none rounded-[3px] border-[7px] border-[#1e3006] bg-[#86a913] p-[3px] shadow-[inset_0_0_0_2px_#4b650d,0_6px_0_#3d530a]">
       <div className="relative inline-grid overflow-hidden rounded-[1px] border border-[#304908] shadow-[inset_0_0_0_1px_rgba(208,237,87,0.18)]">
         <div
           className="inline-grid"
