@@ -23,6 +23,9 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
   background: radial-gradient(circle at 20% -5%, #efecd9 0%, #d6d3bc 55%, #c7c2a7 100%);
   color: var(--pixel-dark);
   font-family: var(--font-pixel-title), monospace;
