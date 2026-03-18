@@ -19,6 +19,9 @@ const pixelDisplay = VT323({
 export const metadata: Metadata = {
   title: baseAppConfig.appName,
   description: baseAppConfig.appDescription,
+  other: {
+    "base:app_id": baseAppConfig.baseAppId,
+  },
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
@@ -33,6 +36,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="base:app_id" content={baseAppConfig.baseAppId} />
+      </head>
       <body className={`${pixelTitle.variable} ${pixelDisplay.variable} antialiased`}>
         <AppProviders>{children}</AppProviders>
       </body>
