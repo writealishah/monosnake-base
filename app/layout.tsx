@@ -16,11 +16,14 @@ const pixelDisplay = VT323({
   subsets: ["latin"],
 });
 
+const BASE_APP_ID =
+  (baseAppConfig as { baseAppId?: string }).baseAppId ?? "69ba1e3d5b0dee671be77e7b";
+
 export const metadata: Metadata = {
   title: baseAppConfig.appName,
   description: baseAppConfig.appDescription,
   other: {
-    "base:app_id": baseAppConfig.baseAppId,
+    "base:app_id": BASE_APP_ID,
   },
   icons: {
     icon: "/favicon.svg",
@@ -37,7 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <meta name="base:app_id" content={baseAppConfig.baseAppId} />
+        <meta name="base:app_id" content={BASE_APP_ID} />
       </head>
       <body className={`${pixelTitle.variable} ${pixelDisplay.variable} antialiased`}>
         <AppProviders>{children}</AppProviders>
