@@ -415,6 +415,30 @@ export function SnakeApp() {
       setStatusMessage("Score must be above zero.");
       return;
     }
+    if (!publicClient) {
+      setStatusMessage("Network client not ready yet. Try again.");
+      return;
+    }
+
+    let latestOnchainBest = onchainBestScore ?? 0;
+    try {
+      const latestBestRaw = await publicClient.readContract({
+        address: targetContractAddress,
+        abi: scoreContractAbi,
+        functionName: "getBestScore",
+        args: [safeAddress],
+      });
+      latestOnchainBest = Number(latestBestRaw ?? 0n);
+    } catch {
+      // Keep cached value if a fresh read is temporarily unavailable.
+    }
+
+    if (gameState.score <= latestOnchainBest) {
+      setStatusMessage(
+        `Score ${gameState.score} is not higher than your onchain best (${latestOnchainBest}). Beat it to submit.`,
+      );
+      return;
+    }
 
     try {
       setIsSubmittingScore(true);
@@ -474,7 +498,13 @@ export function SnakeApp() {
     } catch (error) {
       play("submitError");
       const message = error instanceof Error ? error.message : "Score submission failed.";
-      setStatusMessage(message);
+      if (
+        /scoremustincrease|execution reverted|simulation failed|revert #-39000/i.test(message)
+      ) {
+        setStatusMessage("Submission rejected: score must be higher than your current onchain best.");
+      } else {
+        setStatusMessage(message);
+      }
     } finally {
       setIsSubmittingScore(false);
     }
@@ -488,11 +518,13 @@ export function SnakeApp() {
     play,
     publicClient,
     refetchOnchainBest,
+    safeAddress,
     signMessageAsync,
     targetChainId,
     targetChainName,
     targetContractAddress,
     writeContractAsync,
+    onchainBestScore,
   ]);
 
   const connectWallet = useCallback(() => {
@@ -537,10 +569,14 @@ export function SnakeApp() {
   }, [play, togglePause]);
 
   const showSubmitButton = isConnected && isGameOver && gameState.score > 0;
+  const canBeatOnchainBest = onchainBestScore === null || gameState.score > onchainBestScore;
+  const submitDisabled = chainId === targetChainId && !canBeatOnchainBest;
   const showSwitchNetworkButton = isConnected && chainId !== targetChainId;
   const submitButtonLabel =
     chainId !== targetChainId
       ? `Switch to ${targetChainName}`
+      : onchainBestScore !== null && gameState.score <= onchainBestScore
+        ? `Need > ${onchainBestScore}`
       : targetContractAddress
         ? "Save Score Onchain"
         : "Contract Missing";
@@ -663,6 +699,7 @@ export function SnakeApp() {
                           score={gameState.score}
                           localBest={localBest}
                           canSubmitScore={showSubmitButton}
+                          submitDisabled={submitDisabled}
                           isSubmitting={isSubmittingScore || isContractTxPending}
                           submitLabel={submitButtonLabel}
                           onReplay={replayRound}
