@@ -19,7 +19,7 @@ function PadButton({
       type="button"
       onClick={onPress}
       disabled={disabled}
-      className="h-14 w-14 rounded-md border-2 border-[#38431a] bg-[#dbd8c4] text-sm text-[#1f240c] shadow-[2px_2px_0_#505b2a] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:cursor-not-allowed disabled:opacity-50"
+      className="h-14 w-14 touch-manipulation rounded-md border-2 border-[#38431a] bg-[#dbd8c4] text-sm text-[#1f240c] shadow-[2px_2px_0_#505b2a] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:cursor-not-allowed disabled:opacity-50"
       aria-label={`Move ${label}`}
     >
       {label}
@@ -29,7 +29,7 @@ function PadButton({
 
 export function TouchControls({ disabled, onDirection }: TouchControlsProps) {
   return (
-    <div className="mx-auto mt-5 flex w-full max-w-[240px] flex-col items-center gap-2 md:hidden">
+    <div className="mx-auto mt-3 flex w-full max-w-[240px] touch-none flex-col items-center gap-2 md:hidden">
       <PadButton label="U" disabled={disabled} onPress={() => onDirection("up")} />
       <div className="flex w-full items-center justify-between">
         <PadButton label="L" disabled={disabled} onPress={() => onDirection("left")} />
@@ -39,4 +39,3 @@ export function TouchControls({ disabled, onDirection }: TouchControlsProps) {
     </div>
   );
 }
-
