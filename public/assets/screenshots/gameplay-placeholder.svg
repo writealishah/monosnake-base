@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
-  <rect width="1200" height="630" fill="#D6D3BC"/>
-  <rect x="130" y="70" width="940" height="490" rx="28" fill="#ECE9D8" stroke="#B8B390" stroke-width="10"/>
-  <rect x="220" y="140" width="760" height="350" rx="10" fill="#90AD17" stroke="#223309" stroke-width="8"/>
-  <path d="M300 240H700V270H360V300H640V330H320V360H720V390H300V240Z" fill="#1F240C"/>
-  <rect x="760" y="230" width="28" height="28" fill="#2A5FB2"/>
-  <text x="250" y="530" fill="#2D3810" font-size="34" font-family="monospace">GAMEPLAY PLACEHOLDER</text>
-</svg>
-
