@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAddress, parseAbiItem } from "viem";
+import { createPublicClient, http, isAddress, parseAbiItem, toCoinType } from "viem";
+import { mainnet } from "viem/chains";
 import { appNetworkConfig } from "@/config/networks";
 import { createScorePublicClient, resolveContractAddress } from "@/lib/contracts/clients";
 import { readProfiles } from "@/lib/leaderboard/storage";
@@ -7,6 +8,21 @@ import type { LeaderboardEntry, LeaderboardResponse } from "@/lib/leaderboard/ty
 
 const MAX_LOG_RANGE = 10_000n;
 const DEFAULT_LOOKBACK_BLOCKS = 200_000n;
+const ENS_LOOKUP_TIMEOUT_MS = 1_400;
+
+const ensLookupClient = createPublicClient({
+  chain: mainnet,
+  transport: http(process.env.ETH_MAINNET_RPC_URL ?? mainnet.rpcUrls.default.http[0]),
+});
+
+type RankedScore = {
+  address: `0x${string}`;
+  score: number;
+  achievedAt: number;
+  username: string | null;
+};
+
+type ResolvedIdentity = Pick<LeaderboardEntry, "displayName" | "identitySource">;
 
 function getChainId(request: NextRequest): number {
   const chainIdParam = request.nextUrl.searchParams.get("chainId");
@@ -48,6 +64,126 @@ function resolveFromBlock(chainId: number, latestBlock: bigint): { fromBlock: bi
     fromBlock: fallbackFromBlock,
     note:
       "Using fallback scan window. Set SCORE_EVENTS_FROM_BLOCK_BASE_MAINNET for full indexing.",
+  };
+}
+
+function shortenAddress(address: `0x${string}`): string {
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
+function resolveCoinType(chainId: number): bigint {
+  try {
+    return toCoinType(chainId);
+  } catch {
+    return 60n;
+  }
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T | null> {
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<null>((resolve) => {
+    timeoutHandle = setTimeout(() => resolve(null), timeoutMs);
+  });
+
+  const result = await Promise.race([promise.then((value) => value as T).catch(() => null), timeoutPromise]);
+
+  if (timeoutHandle) {
+    clearTimeout(timeoutHandle);
+  }
+
+  return result as T | null;
+}
+
+async function lookupEnsName(address: `0x${string}`, coinType: bigint): Promise<string | null> {
+  return withTimeout(
+    ensLookupClient.getEnsName({
+      address,
+      coinType,
+      strict: false,
+    }),
+    ENS_LOOKUP_TIMEOUT_MS,
+  );
+}
+
+async function resolveIdentity({
+  address,
+  chainId,
+  username,
+  cache,
+}: {
+  address: `0x${string}`;
+  chainId: number;
+  username: string | null;
+  cache: Map<string, Promise<ResolvedIdentity>>;
+}): Promise<ResolvedIdentity> {
+  const cacheKey = address.toLowerCase();
+  const cached = cache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const resolutionPromise = (async () => {
+    const basenameCoinType = resolveCoinType(chainId);
+    const basenameName = await lookupEnsName(address, basenameCoinType);
+    if (basenameName && basenameName.toLowerCase().endsWith(".base.eth")) {
+      return {
+        displayName: basenameName,
+        identitySource: "basename",
+      } satisfies ResolvedIdentity;
+    }
+
+    const ensName =
+      basenameCoinType === 60n ? basenameName : await lookupEnsName(address, 60n);
+    if (ensName) {
+      return {
+        displayName: ensName,
+        identitySource: ensName.toLowerCase().endsWith(".base.eth") ? "basename" : "ens",
+      } satisfies ResolvedIdentity;
+    }
+
+    if (username) {
+      return {
+        displayName: username,
+        identitySource: "custom",
+      } satisfies ResolvedIdentity;
+    }
+
+    return {
+      displayName: shortenAddress(address),
+      identitySource: "address",
+    } satisfies ResolvedIdentity;
+  })();
+
+  cache.set(cacheKey, resolutionPromise);
+  return resolutionPromise;
+}
+
+async function toLeaderboardEntry({
+  row,
+  rank,
+  chainId,
+  cache,
+}: {
+  row: RankedScore;
+  rank: number;
+  chainId: number;
+  cache: Map<string, Promise<ResolvedIdentity>>;
+}): Promise<LeaderboardEntry> {
+  const identity = await resolveIdentity({
+    address: row.address,
+    chainId,
+    username: row.username,
+    cache,
+  });
+
+  return {
+    rank,
+    address: row.address,
+    username: row.username,
+    displayName: identity.displayName,
+    identitySource: identity.identitySource,
+    score: row.score,
+    achievedAt: row.achievedAt,
   };
 }
 
@@ -138,7 +274,7 @@ export async function GET(request: NextRequest) {
     byPlayer.set(player, { score, achievedAt });
   }
 
-  const sorted = [...byPlayer.entries()]
+  const sorted: RankedScore[] = [...byPlayer.entries()]
     .map(([address, value]) => ({
       address: address as `0x${string}`,
       score: value.score,
@@ -152,29 +288,27 @@ export async function GET(request: NextRequest) {
       return a.achievedAt - b.achievedAt;
     });
 
-  const top: LeaderboardEntry[] = sorted.slice(0, 20).map((entry, index) => ({
-    rank: index + 1,
-    address: entry.address,
-    username: entry.username,
-    score: entry.score,
-    achievedAt: entry.achievedAt,
-  }));
+  const identityCache = new Map<string, Promise<ResolvedIdentity>>();
+  const top = await Promise.all(
+    sorted
+      .slice(0, 20)
+      .map((entry, index) =>
+        toLeaderboardEntry({ row: entry, rank: index + 1, chainId, cache: identityCache }),
+      ),
+  );
 
-  const personal = normalizedAddress
-    ? sorted.find((entry) => entry.address.toLowerCase() === normalizedAddress) ?? null
-    : null;
-
-  const personalBest: LeaderboardEntry | null = personal
-    ? {
-        rank:
-          sorted.findIndex((entry) => entry.address.toLowerCase() === personal.address.toLowerCase()) +
-          1,
-        address: personal.address,
-        username: personal.username,
-        score: personal.score,
-        achievedAt: personal.achievedAt,
-      }
-    : null;
+  const personalIndex = normalizedAddress
+    ? sorted.findIndex((entry) => entry.address.toLowerCase() === normalizedAddress)
+    : -1;
+  const personalBest =
+    personalIndex >= 0
+      ? await toLeaderboardEntry({
+          row: sorted[personalIndex],
+          rank: personalIndex + 1,
+          chainId,
+          cache: identityCache,
+        })
+      : null;
 
   const response: LeaderboardResponse = {
     chainId,
