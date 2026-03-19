@@ -1,7 +1,11 @@
+export type LeaderboardIdentitySource = "basename" | "ens" | "custom" | "address";
+
 export type LeaderboardEntry = {
   rank: number;
   address: `0x${string}`;
   username: string | null;
+  displayName: string;
+  identitySource: LeaderboardIdentitySource;
   score: number;
   achievedAt: number;
 };
@@ -20,4 +24,3 @@ export type ProfileRecord = {
   username: string;
   updatedAt: number;
 };
-
