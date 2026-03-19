@@ -1,5 +1,5 @@
 import type { LeaderboardEntry } from "@/lib/leaderboard/types";
-import { formatDateTime, shortenAddress } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 
 type LeaderboardPanelProps = {
   entries: LeaderboardEntry[];
@@ -10,6 +10,13 @@ type LeaderboardPanelProps = {
   setupMissing?: boolean;
   onRefresh: () => void;
   compact?: boolean;
+};
+
+const identitySourceLabel: Record<LeaderboardEntry["identitySource"], string> = {
+  basename: "Base",
+  ens: "ENS",
+  custom: "Custom",
+  address: "Address",
 };
 
 export function LeaderboardPanel({
@@ -81,8 +88,13 @@ export function LeaderboardPanel({
               {entries.map((entry) => (
                 <tr key={entry.address} className="odd:bg-[#ece9d8] even:bg-[#e0ddcb]">
                   <td className="px-2 py-1 font-mono">{entry.rank}</td>
-                  <td className="px-2 py-1 font-['VT323'] text-lg leading-none">
-                    {entry.username ?? shortenAddress(entry.address)}
+                  <td className="px-2 py-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-['VT323'] text-lg leading-none">{entry.displayName}</span>
+                      <span className="rounded-sm border border-[#6f7a45] bg-[#d8d5c2] px-1 py-0.5 text-[8px] uppercase tracking-[0.08em] text-[#4f5d2c]">
+                        {identitySourceLabel[entry.identitySource]}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-2 py-1 font-['VT323'] text-lg leading-none">{entry.score}</td>
                   {!compact ? <td className="px-2 py-1">{formatDateTime(entry.achievedAt)}</td> : null}
@@ -104,7 +116,7 @@ export function LeaderboardPanel({
         <p className="text-[10px] uppercase tracking-[0.15em] text-[#4c5a27]">Your Best</p>
         {personalBest ? (
           <p className="font-['VT323'] text-2xl leading-none text-[#27330e]">
-            #{personalBest.rank} | {personalBest.score}
+            #{personalBest.rank} | {personalBest.score} | {personalBest.displayName}
           </p>
         ) : (
           <p className="font-['VT323'] text-xl leading-none text-[#3f4b1f]">No onchain best yet.</p>
@@ -113,4 +125,3 @@ export function LeaderboardPanel({
     </div>
   );
 }
-
