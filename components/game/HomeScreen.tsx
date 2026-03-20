@@ -34,14 +34,14 @@ export function HomeScreen({
         <button
           type="button"
           onClick={onPlay}
-          className="rounded-sm border-2 border-[#27330e] bg-[#9cbc1e] px-4 py-3 text-xs text-[#1d250b] shadow-[3px_3px_0_#40531a] transition hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#40531a] active:translate-y-0 active:shadow-[2px_2px_0_#40531a]"
+          className="min-h-11 rounded-sm border-2 border-[#27330e] bg-[#9cbc1e] px-4 py-3 text-xs text-[#1d250b] shadow-[3px_3px_0_#40531a] transition hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#40531a] active:translate-y-0 active:shadow-[2px_2px_0_#40531a]"
         >
           START RUN
         </button>
         <button
           type="button"
           onClick={onOpenLeaderboard}
-          className="rounded-sm border-2 border-[#38431a] bg-[#d8d5c2] px-4 py-3 text-xs text-[#1f240c] shadow-[3px_3px_0_#505b2a] transition hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#505b2a] active:translate-y-0 active:shadow-[2px_2px_0_#505b2a]"
+          className="min-h-11 rounded-sm border-2 border-[#38431a] bg-[#d8d5c2] px-4 py-3 text-xs text-[#1f240c] shadow-[3px_3px_0_#505b2a] transition hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#505b2a] active:translate-y-0 active:shadow-[2px_2px_0_#505b2a]"
         >
           VIEW LEADERBOARD
         </button>
@@ -49,7 +49,7 @@ export function HomeScreen({
           type="button"
           onClick={onConnectWallet}
           disabled={isConnected}
-          className="rounded-sm border-2 border-[#38431a] bg-[#d8d5c2] px-4 py-3 text-xs text-[#1f240c] shadow-[3px_3px_0_#505b2a] disabled:opacity-60"
+          className="min-h-11 rounded-sm border-2 border-[#38431a] bg-[#d8d5c2] px-4 py-3 text-xs text-[#1f240c] shadow-[3px_3px_0_#505b2a] disabled:opacity-60"
         >
           {isConnected ? "WALLET CONNECTED" : "CONNECT WALLET"}
         </button>
@@ -58,7 +58,7 @@ export function HomeScreen({
             type="button"
             onClick={onSwitchNetwork}
             disabled={!onSwitchNetwork || isSwitchingNetwork}
-            className="rounded-sm border-2 border-[#38431a] bg-[#d8d5c2] px-4 py-3 text-xs text-[#1f240c] shadow-[3px_3px_0_#505b2a] disabled:opacity-60"
+            className="min-h-11 rounded-sm border-2 border-[#38431a] bg-[#d8d5c2] px-4 py-3 text-xs text-[#1f240c] shadow-[3px_3px_0_#505b2a] disabled:opacity-60"
           >
             {isSwitchingNetwork ? "SWITCHING..." : `SWITCH TO ${targetChainName.toUpperCase()}`}
           </button>
