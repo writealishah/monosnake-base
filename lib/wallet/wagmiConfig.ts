@@ -1,5 +1,5 @@
-import { createConfig, http } from "wagmi";
-import { injected } from "wagmi/connectors";
+import { cookieStorage, createConfig, createStorage, http } from "wagmi";
+import { baseAccount, injected } from "wagmi/connectors";
 import { base, baseSepolia } from "wagmi/chains";
 import { appNetworkConfig, enabledChains } from "@/config/networks";
 import { baseAppConfig } from "@/config/baseApp";
@@ -16,10 +16,19 @@ const isBuilderCodeConfigured =
 const dataSuffix = isBuilderCodeConfigured
   ? Attribution.toDataSuffix({ codes: [configuredBuilderCode] })
   : undefined;
+const wagmiStorage = createStorage({
+  storage: cookieStorage,
+});
 
 export const wagmiConfig = createConfig({
   chains: enabledChains,
-  connectors: [injected()],
+  connectors: [
+    baseAccount({
+      appName: baseAppConfig.appName,
+    }),
+    injected(),
+  ],
+  storage: wagmiStorage,
   transports: {
     [baseSepolia.id]: http(baseSepoliaRpcUrl),
     [base.id]: http(baseMainnetRpcUrl),
