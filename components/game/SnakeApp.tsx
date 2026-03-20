@@ -29,7 +29,6 @@ import { SoundToggle } from "@/components/game/SoundToggle";
 import { useRetroSounds } from "@/lib/sound/useRetroSounds";
 import { baseAppConfig } from "@/config/baseApp";
 import { Attribution } from "ox/erc8021";
-import { sdk } from "@farcaster/miniapp-sdk";
 
 type ScreenView = "home" | "game" | "leaderboard";
 
@@ -183,26 +182,6 @@ export function SnakeApp() {
     },
     [address, play, targetChainId],
   );
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function markMiniAppReady() {
-      try {
-        await sdk.actions.ready({ disableNativeGestures: true });
-      } catch {
-        if (!cancelled) {
-          // Ignore outside supported Mini App hosts.
-        }
-      }
-    }
-
-    void markMiniAppReady();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     void loadLeaderboard();
