@@ -7,6 +7,7 @@ type GameOverPanelProps = {
   submitLabel: string;
   onReplay: () => void;
   onSubmit: () => void;
+  onShare: () => void;
 };
 
 export function GameOverPanel({
@@ -18,6 +19,7 @@ export function GameOverPanel({
   submitLabel,
   onReplay,
   onSubmit,
+  onShare,
 }: GameOverPanelProps) {
   const isBestRun = score >= localBest && score > 0;
 
@@ -38,6 +40,13 @@ export function GameOverPanel({
             className="rounded-sm border-2 border-[#27330e] bg-[#9cbc1e] px-3 py-2 text-xs text-[#1d250b] shadow-[3px_3px_0_#40531a] active:translate-y-[1px] active:shadow-[2px_2px_0_#40531a]"
           >
             PLAY AGAIN
+          </button>
+          <button
+            type="button"
+            onClick={onShare}
+            className="rounded-sm border-2 border-[#38431a] bg-[#d8d5c2] px-3 py-2 text-[11px] text-[#1f240c] shadow-[3px_3px_0_#505b2a] active:translate-y-[1px] active:shadow-[2px_2px_0_#505b2a]"
+          >
+            SHARE SCORE
           </button>
           {canSubmitScore ? (
             <button
