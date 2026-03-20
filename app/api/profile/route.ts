@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAddress, recoverMessageAddress } from "viem";
+import { appNetworkConfig } from "@/config/networks";
 import { createUsernameMessage } from "@/lib/leaderboard/messages";
 import { readProfiles, writeProfiles } from "@/lib/leaderboard/storage";
+import { resolveAddressIdentity } from "@/lib/identity/resolveAddressIdentity";
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]{2,20}$/;
 
@@ -9,18 +11,44 @@ export async function GET(request: NextRequest) {
   try {
     const address = request.nextUrl.searchParams.get("address");
     if (!address || !isAddress(address)) {
-      return NextResponse.json({ username: null });
+      return NextResponse.json({
+        username: null,
+        updatedAt: null,
+        displayName: null,
+        identitySource: null,
+        avatarUrl: null,
+      });
     }
 
+    const normalizedAddress = address.toLowerCase() as `0x${string}`;
     const profiles = await readProfiles();
-    const profile = profiles[address.toLowerCase()];
+    const profile = profiles[normalizedAddress];
+    const identity = await resolveAddressIdentity({
+      address: normalizedAddress,
+      chainId: appNetworkConfig.targetChainId,
+      username: profile?.username ?? null,
+    });
+
     return NextResponse.json({
       username: profile?.username ?? null,
       updatedAt: profile?.updatedAt ?? null,
+      displayName: identity.displayName,
+      identitySource: identity.identitySource,
+      avatarUrl: identity.avatarUrl,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Profile lookup failed.";
-    return NextResponse.json({ error: message, username: null }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: message,
+        username: null,
+        updatedAt: null,
+        displayName: null,
+        identitySource: null,
+        avatarUrl: null,
+      },
+      { status: 500 },
+    );
   }
 }
 
