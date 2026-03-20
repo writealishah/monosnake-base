@@ -326,6 +326,34 @@ export function SnakeApp() {
     restartGame();
   }, [play, restartGame]);
 
+  const shareScore = useCallback(async () => {
+    play("buttonClick");
+
+    const appUrl = baseAppConfig.websiteUrl;
+    const text = `I scored ${gameState.score} on MonoSnake Base. Beat me: ${appUrl}`;
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        await navigator.share({
+          title: "MonoSnake Base",
+          text,
+          url: appUrl,
+        });
+        setStatusMessage("Shared successfully.");
+        return;
+      }
+
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        setStatusMessage("Share text copied. Paste it to post.");
+        return;
+      }
+
+      setStatusMessage("Sharing is unavailable on this device.");
+    } catch {
+      setStatusMessage("Share cancelled.");
+    }
+  }, [gameState.score, play]);
+
   const saveUsername = useCallback(async () => {
     play("buttonClick");
 
@@ -747,6 +775,7 @@ export function SnakeApp() {
                           submitLabel={submitButtonLabel}
                           onReplay={replayRound}
                           onSubmit={submitScore}
+                          onShare={() => void shareScore()}
                         />
                       ) : null}
                     </div>
