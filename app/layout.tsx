@@ -16,15 +16,52 @@ const pixelDisplay = VT323({
   subsets: ["latin"],
 });
 
-const BASE_APP_ID =
-  (baseAppConfig as { baseAppId?: string }).baseAppId ?? "69ba1e3d5b0dee671be77e7b";
+const BASE_APP_ID = baseAppConfig.baseAppId?.trim() ?? "";
+const APP_URL = baseAppConfig.websiteUrl;
+const OG_IMAGE_PATH = baseAppConfig.coverImagePath ?? baseAppConfig.ogImagePath;
+const METADATA_BASE_URL = (() => {
+  try {
+    return new URL(APP_URL);
+  } catch {
+    return new URL("https://monosnake.vercel.app");
+  }
+})();
 
 export const metadata: Metadata = {
+  metadataBase: METADATA_BASE_URL,
   title: baseAppConfig.appName,
   description: baseAppConfig.appDescription,
-  other: {
-    "base:app_id": BASE_APP_ID,
+  applicationName: baseAppConfig.appName,
+  keywords: baseAppConfig.tags,
+  alternates: {
+    canonical: "/",
   },
+  openGraph: {
+    title: baseAppConfig.ogTitle,
+    description: baseAppConfig.ogDescription,
+    type: "website",
+    url: APP_URL,
+    siteName: baseAppConfig.appName,
+    images: [
+      {
+        url: OG_IMAGE_PATH,
+        width: 1200,
+        height: 630,
+        alt: "MonoSnake Base gameplay preview",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: baseAppConfig.ogTitle,
+    description: baseAppConfig.ogDescription,
+    images: [OG_IMAGE_PATH],
+  },
+  other: BASE_APP_ID
+    ? {
+        "base:app_id": BASE_APP_ID,
+      }
+    : undefined,
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
@@ -39,9 +76,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <meta name="base:app_id" content={BASE_APP_ID} />
-      </head>
       <body className={`${pixelTitle.variable} ${pixelDisplay.variable} antialiased`}>
         <AppProviders>{children}</AppProviders>
       </body>
