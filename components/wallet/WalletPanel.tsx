@@ -1,8 +1,18 @@
 import { shortenAddress } from "@/lib/utils";
 
+const identitySourceLabel: Record<"basename" | "ens" | "custom" | "address", string> = {
+  basename: "Basename",
+  ens: "ENS",
+  custom: "Custom",
+  address: "Address",
+};
+
 type WalletPanelProps = {
   isConnected: boolean;
   address?: string;
+  displayName?: string | null;
+  identitySource?: "basename" | "ens" | "custom" | "address" | null;
+  avatarUrl?: string | null;
   chainName?: string;
   targetChainName: string;
   networkStatusText: string;
@@ -21,6 +31,9 @@ type WalletPanelProps = {
 export function WalletPanel({
   isConnected,
   address,
+  displayName,
+  identitySource,
+  avatarUrl,
   chainName,
   targetChainName,
   networkStatusText,
@@ -37,11 +50,24 @@ export function WalletPanel({
 }: WalletPanelProps) {
   const normalizedUsername = usernameInput.trim();
   const hasUsername = normalizedUsername.length > 0;
-  const profileTitle = isConnected
-    ? hasUsername
-      ? `@${normalizedUsername}`
-      : shortenAddress(address)
+  const normalizedDisplayName = displayName?.trim() ?? "";
+  const hasResolvedDisplay = normalizedDisplayName.length > 0;
+  const fallbackAddressLabel = shortenAddress(address);
+  const profileName = isConnected
+    ? hasResolvedDisplay
+      ? identitySource === "custom" && !normalizedDisplayName.startsWith("@")
+        ? `@${normalizedDisplayName}`
+        : normalizedDisplayName
+      : hasUsername
+        ? `@${normalizedUsername}`
+        : fallbackAddressLabel
     : "Guest mode active";
+  const profileTitle = isConnected
+    ? profileName
+    : "Guest mode active";
+  const avatarLetter = profileName.replace(/^@/, "").charAt(0).toUpperCase() || "?";
+  const activeIdentitySource =
+    isConnected && identitySource ? identitySourceLabel[identitySource] : "Guest";
 
   return (
     <div className="rounded-md border-2 border-[#435220] bg-[#ece9d8] p-2.5 shadow-[0_4px_0_#a8a483]">
@@ -51,7 +77,7 @@ export function WalletPanel({
           <button
             type="button"
             onClick={onDisconnect}
-            className="rounded-sm border border-[#556732] bg-[#d8d5c2] px-2 py-1 text-[10px] text-[#1f240c] shadow-[1px_1px_0_#7f8f5a]"
+            className="min-h-11 rounded-sm border border-[#556732] bg-[#d8d5c2] px-3 py-2 text-[11px] text-[#1f240c] shadow-[1px_1px_0_#7f8f5a]"
           >
             Disconnect
           </button>
@@ -59,19 +85,37 @@ export function WalletPanel({
           <button
             type="button"
             onClick={onConnect}
-            className="rounded-sm border border-[#3f4b1f] bg-[#9cbc1e] px-2 py-1 text-[10px] text-[#1d250b] shadow-[1px_1px_0_#5f7620]"
+            className="min-h-11 rounded-sm border border-[#3f4b1f] bg-[#9cbc1e] px-3 py-2 text-[11px] text-[#1d250b] shadow-[1px_1px_0_#5f7620]"
           >
             Connect
           </button>
         )}
       </div>
 
-      <p className="mt-1 font-['VT323'] text-2xl leading-none text-[#27330e]">{profileTitle}</p>
-      {isConnected && hasUsername ? (
-        <p className="mt-0.5 text-[10px] uppercase tracking-[0.1em] text-[#5a6736]">
-          Wallet {shortenAddress(address)}
-        </p>
-      ) : null}
+      <div className="mt-2 flex items-center gap-2.5">
+        <div className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-sm border border-[#556732] bg-[#d8d5c2] font-['VT323'] text-2xl text-[#2f3f14]">
+          {avatarUrl ? (
+            <span
+              className="absolute inset-0 bg-cover bg-center"
+              style={{
+                backgroundImage: `url(${avatarUrl})`,
+              }}
+              aria-hidden="true"
+            />
+          ) : null}
+          {!avatarUrl ? <span>{avatarLetter}</span> : null}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-['VT323'] text-2xl leading-none text-[#27330e]">{profileTitle}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <p className="text-[10px] uppercase tracking-[0.1em] text-[#5a6736]">Wallet {fallbackAddressLabel}</p>
+            <span className="rounded-sm border border-[#6f7a45] bg-[#d8d5c2] px-1 py-0.5 text-[9px] uppercase tracking-[0.08em] text-[#4f5d2c]">
+              {activeIdentitySource}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-[#4d5c2a]">{networkStatusText}</p>
 
       {isConnected ? (
@@ -85,7 +129,7 @@ export function WalletPanel({
                   type="button"
                   onClick={onSwitchNetwork}
                   disabled={isSwitchingNetwork}
-                  className="rounded-sm border border-[#7a1d1d] bg-white px-2 py-1 text-[10px] disabled:opacity-70"
+                  className="min-h-11 rounded-sm border border-[#7a1d1d] bg-white px-3 py-2 text-[11px] disabled:opacity-70"
                 >
                   {isSwitchingNetwork ? "Switching..." : `Switch to ${targetChainName}`}
                 </button>
@@ -103,13 +147,13 @@ export function WalletPanel({
                 value={usernameInput}
                 onChange={(event) => onUsernameInput(event.target.value)}
                 placeholder="retro_snake"
-                className="w-full rounded-sm border border-[#4f5d2a] bg-[#f7f5eb] px-2 py-1 font-['VT323'] text-xl leading-none text-[#1f240c] outline-none focus:ring-2 focus:ring-[#95b615]"
+                className="min-h-11 w-full rounded-sm border border-[#4f5d2a] bg-[#f7f5eb] px-2 py-1.5 font-['VT323'] text-xl leading-none text-[#1f240c] outline-none focus:ring-2 focus:ring-[#95b615]"
               />
               <button
                 type="button"
                 onClick={onSaveUsername}
                 disabled={isSavingUsername}
-                className="rounded-sm border border-[#4f5d2a] bg-[#d8d5c2] px-2 py-1 text-[10px] text-[#1f240c] shadow-[1px_1px_0_#7f8f5a] disabled:opacity-60"
+                className="min-h-11 rounded-sm border border-[#4f5d2a] bg-[#d8d5c2] px-3 py-2 text-[11px] text-[#1f240c] shadow-[1px_1px_0_#7f8f5a] disabled:opacity-60"
               >
                 {isSavingUsername ? "Saving..." : "Save"}
               </button>
