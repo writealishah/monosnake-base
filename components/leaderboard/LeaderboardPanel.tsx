@@ -40,7 +40,7 @@ export function LeaderboardPanel({
         <button
           type="button"
           onClick={onRefresh}
-          className="rounded-sm border border-[#556732] bg-[#d8d5c2] px-2 py-1 text-[10px] text-[#1f240c] shadow-[1px_1px_0_#7f8f5a]"
+          className="min-h-11 rounded-sm border border-[#556732] bg-[#d8d5c2] px-3 py-2 text-[11px] text-[#1f240c] shadow-[1px_1px_0_#7f8f5a]"
         >
           Refresh
         </button>
