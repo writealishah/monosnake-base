@@ -35,6 +35,14 @@ export function WalletPanel({
   isSavingUsername,
   onchainBest,
 }: WalletPanelProps) {
+  const normalizedUsername = usernameInput.trim();
+  const hasUsername = normalizedUsername.length > 0;
+  const profileTitle = isConnected
+    ? hasUsername
+      ? `@${normalizedUsername}`
+      : shortenAddress(address)
+    : "Guest mode active";
+
   return (
     <div className="rounded-md border-2 border-[#435220] bg-[#ece9d8] p-2.5 shadow-[0_4px_0_#a8a483]">
       <div className="flex items-center justify-between gap-3">
@@ -58,9 +66,12 @@ export function WalletPanel({
         )}
       </div>
 
-      <p className="mt-1 font-['VT323'] text-2xl leading-none text-[#27330e]">
-        {isConnected ? shortenAddress(address) : "Guest mode active"}
-      </p>
+      <p className="mt-1 font-['VT323'] text-2xl leading-none text-[#27330e]">{profileTitle}</p>
+      {isConnected && hasUsername ? (
+        <p className="mt-0.5 text-[10px] uppercase tracking-[0.1em] text-[#5a6736]">
+          Wallet {shortenAddress(address)}
+        </p>
+      ) : null}
       <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-[#4d5c2a]">{networkStatusText}</p>
 
       {isConnected ? (
