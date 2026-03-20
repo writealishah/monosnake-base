@@ -25,6 +25,7 @@ import { LeaderboardPanel } from "@/components/leaderboard/LeaderboardPanel";
 import { scoreContractAbi } from "@/lib/contracts/scoreContract";
 import { createScoreClaimMessage, createUsernameMessage } from "@/lib/leaderboard/messages";
 import type { LeaderboardResponse } from "@/lib/leaderboard/types";
+import type { LeaderboardIdentitySource } from "@/lib/leaderboard/types";
 import { SoundToggle } from "@/components/game/SoundToggle";
 import { useRetroSounds } from "@/lib/sound/useRetroSounds";
 import { baseAppConfig } from "@/config/baseApp";
@@ -58,6 +59,13 @@ async function readJsonSafely<T>(response: Response): Promise<T | null> {
   }
 }
 
+type ProfileResponse = {
+  username: string | null;
+  displayName?: string | null;
+  identitySource?: LeaderboardIdentitySource | null;
+  avatarUrl?: string | null;
+};
+
 export function SnakeApp() {
   const gameViewportRef = useRef<HTMLDivElement | null>(null);
   const [screenView, setScreenView] = useState<ScreenView>("home");
@@ -70,6 +78,9 @@ export function SnakeApp() {
   const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
   const [leaderboardNote, setLeaderboardNote] = useState<string | null>(null);
   const [showNetworkModal, setShowNetworkModal] = useState(false);
+  const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null);
+  const [profileIdentitySource, setProfileIdentitySource] = useState<LeaderboardIdentitySource | null>(null);
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
 
   const {
     gameState,
@@ -83,7 +94,7 @@ export function SnakeApp() {
     setDirection,
   } = useSnakeGame();
 
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, isReconnecting } = useAccount();
   const chainId = useChainId();
   const { connect, connectors, isPending: isConnecting } = useConnect();
   const { disconnect } = useDisconnect();
@@ -187,28 +198,41 @@ export function SnakeApp() {
     void loadLeaderboard();
   }, [loadLeaderboard]);
 
-  useEffect(() => {
+  const loadProfile = useCallback(async () => {
     if (!address) {
       setUsernameInput("");
+      setProfileDisplayName(null);
+      setProfileIdentitySource(null);
+      setProfileAvatarUrl(null);
       return;
     }
 
-    async function loadProfile() {
-      try {
-        const response = await fetch(`/api/profile?address=${address}`);
-        const payload = await readJsonSafely<{ username: string | null }>(response);
-        if (!payload) {
-          setUsernameInput("");
-          return;
-        }
-        setUsernameInput(payload.username ?? "");
-      } catch {
+    try {
+      const response = await fetch(`/api/profile?address=${address}`);
+      const payload = await readJsonSafely<ProfileResponse>(response);
+      if (!payload) {
         setUsernameInput("");
+        setProfileDisplayName(null);
+        setProfileIdentitySource(null);
+        setProfileAvatarUrl(null);
+        return;
       }
-    }
 
-    void loadProfile();
+      setUsernameInput(payload.username ?? "");
+      setProfileDisplayName(payload.displayName ?? null);
+      setProfileIdentitySource(payload.identitySource ?? null);
+      setProfileAvatarUrl(payload.avatarUrl ?? null);
+    } catch {
+      setUsernameInput("");
+      setProfileDisplayName(null);
+      setProfileIdentitySource(null);
+      setProfileAvatarUrl(null);
+    }
   }, [address]);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
 
   useEffect(() => {
     if (screenView !== "game") {
@@ -387,6 +411,7 @@ export function SnakeApp() {
         throw new Error(payload?.error ?? "Failed to save username.");
       }
       setStatusMessage("Username saved.");
+      await loadProfile();
       await loadLeaderboard();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to save username.";
@@ -394,7 +419,7 @@ export function SnakeApp() {
     } finally {
       setIsSavingUsername(false);
     }
-  }, [address, isConnected, loadLeaderboard, play, signMessageAsync, usernameInput]);
+  }, [address, isConnected, loadLeaderboard, loadProfile, play, signMessageAsync, usernameInput]);
 
   const attemptSwitchToTargetNetwork = useCallback(async (): Promise<boolean> => {
     try {
@@ -589,13 +614,28 @@ export function SnakeApp() {
     onchainBestScore,
   ]);
 
-  const connectWallet = useCallback(() => {
+  const connectWallet = useCallback(async () => {
     play("buttonClick");
-    const connector = connectors[0];
+
+    const injectedConnector = connectors.find((item) => item.id === "injected");
+    if (injectedConnector) {
+      try {
+        const injectedProvider = await injectedConnector.getProvider();
+        if (injectedProvider) {
+          connect({ connector: injectedConnector });
+          return;
+        }
+      } catch {
+        // Fall through to Base Account if injected provider lookup fails.
+      }
+    }
+
+    const connector = connectors.find((item) => item.id === "baseAccount") ?? injectedConnector ?? connectors[0];
     if (!connector) {
-      setStatusMessage("No injected wallet was found.");
+      setStatusMessage("No wallet connector was found.");
       return;
     }
+
     connect({ connector });
   }, [connect, connectors, play]);
 
@@ -649,9 +689,9 @@ export function SnakeApp() {
     leaderboardNote && leaderboardNote.toLowerCase().includes("not configured"),
   );
   const controlButtonClass =
-    "rounded-sm border-2 border-[#3f4f1a] bg-[#d8d5c2] px-3 py-2 text-[10px] text-[#1f240c] shadow-[2px_2px_0_#7f8f5a] transition active:translate-y-[1px] active:shadow-[1px_1px_0_#7f8f5a]";
+    "min-h-11 rounded-sm border-2 border-[#3f4f1a] bg-[#d8d5c2] px-3 py-2 text-[11px] text-[#1f240c] shadow-[2px_2px_0_#7f8f5a] transition active:translate-y-[1px] active:shadow-[1px_1px_0_#7f8f5a]";
   const primaryButtonClass =
-    "rounded-sm border-2 border-[#27330e] bg-[#9cbc1e] px-3 py-2 text-[10px] text-[#1d250b] shadow-[2px_2px_0_#617a22] transition active:translate-y-[1px] active:shadow-[1px_1px_0_#617a22]";
+    "min-h-11 rounded-sm border-2 border-[#27330e] bg-[#9cbc1e] px-3 py-2 text-[11px] text-[#1d250b] shadow-[2px_2px_0_#617a22] transition active:translate-y-[1px] active:shadow-[1px_1px_0_#617a22]";
 
   return (
     <main
@@ -729,7 +769,9 @@ export function SnakeApp() {
                     }}
                   />
 
-                  <div className="relative z-20 mb-1 flex items-start justify-between gap-2 px-0.5 text-[#203308] sm:gap-3">
+                  <div
+                    className={`relative z-20 mb-1 flex items-start justify-between gap-2 px-0.5 text-[#203308] transition-opacity sm:gap-3 ${isGameOver ? "opacity-65 sm:opacity-100" : ""}`}
+                  >
                     <div className="leading-none">
                       <p className="text-[9px] uppercase tracking-[0.15em] opacity-75">SCORE</p>
                       <p className="font-['VT323'] text-[34px] leading-none sm:text-3xl">{gameState.score}</p>
@@ -743,7 +785,9 @@ export function SnakeApp() {
                     <div className="text-right leading-none">
                       <p className="text-[9px] uppercase tracking-[0.15em] opacity-75">BEST</p>
                       <p className="font-['VT323'] text-[34px] leading-none sm:text-3xl">{localBest}</p>
-                      <div className="mt-0.5 flex justify-end">
+                      <div
+                        className={`mt-0.5 justify-end ${isGameOver ? "hidden sm:flex" : "flex"}`}
+                      >
                         <SoundToggle
                           isMuted={isMuted}
                           onToggle={toggleSound}
@@ -782,17 +826,14 @@ export function SnakeApp() {
                   </div>
                 </div>
 
-                <TouchControls
-                  onDirection={setDirection}
-                  disabled={screenView !== "game" || isPaused || isGameOver}
-                />
+                {!isGameOver ? (
+                  <TouchControls onDirection={setDirection} disabled={screenView !== "game" || isPaused} />
+                ) : null}
               </div>
             ) : null}
           </div>
 
-          <div
-            className={`${isGameScreen ? "hidden md:flex" : "flex"} ${isMobileCompactGame ? "mt-2" : "mt-3"} flex-wrap gap-2`}
-          >
+          <div className={`${isMobileCompactGame ? "mt-2" : "mt-3"} flex flex-wrap gap-2`}>
             <button type="button" onClick={openHome} className={controlButtonClass}>
               HOME
             </button>
@@ -840,7 +881,10 @@ export function SnakeApp() {
             </p>
           ) : null}
           {statusMessage ? (
-            <p className="mt-2 rounded-sm border border-[#5b6a31] bg-[#d8d5c2] px-2 py-1.5 text-xs text-[#2c3713]">
+            <p
+              className="mt-2 rounded-sm border border-[#5b6a31] bg-[#d8d5c2] px-2 py-1.5 text-xs text-[#2c3713]"
+              role="status"
+            >
               {statusMessage}
             </p>
           ) : null}
@@ -850,6 +894,9 @@ export function SnakeApp() {
           <WalletPanel
             isConnected={isConnected}
             address={address}
+            displayName={profileDisplayName}
+            identitySource={profileIdentitySource}
+            avatarUrl={profileAvatarUrl}
             chainName={chainName}
             targetChainName={targetChainName}
             networkStatusText={networkStatusText}
@@ -878,9 +925,9 @@ export function SnakeApp() {
             onRefresh={() => void loadLeaderboard({ manual: true })}
             compact
           />
-          {isConnecting ? (
+          {isConnecting || isReconnecting ? (
             <div className="rounded-md border border-[#617439] bg-[#d8d5c2] px-2 py-1 text-xs text-[#455426]">
-              Connecting wallet...
+              {isReconnecting ? "Reconnecting wallet..." : "Connecting wallet..."}
             </div>
           ) : null}
         </aside>
