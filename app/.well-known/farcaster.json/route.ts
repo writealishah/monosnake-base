@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
       description: baseAppConfig.appDescription,
       tagline: baseAppConfig.tagline,
       iconUrl: `${origin}${baseAppConfig.iconPath}`,
+      imageUrl: `${origin}${baseAppConfig.ogImagePath}`,
       homeUrl: origin,
       screenshotUrls: baseAppConfig.screenshots.map((path) => `${origin}${path}`),
       splashImageUrl: `${origin}${baseAppConfig.iconPath}`,
